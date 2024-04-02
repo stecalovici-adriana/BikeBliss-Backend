@@ -2,19 +2,24 @@ package com.bb.bikebliss.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
 @SuppressWarnings("unused")
-public class User {
+public class User implements UserDetails {
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified = false;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Integer userId;
 
     @Column(name = "email", unique = true)
     private String email;
@@ -46,9 +51,9 @@ public class User {
     private UserRole userRole;
     public User(){}
 
-    public User(Boolean isVerified, Integer id, String email, String username, String password, String firstName, String lastName, Integer age, LocalDateTime accountCreated, LocalDateTime lastLogin, UserRole userRole) {
+    public User(Boolean isVerified, Integer userId, String email, String username, String password, String firstName, String lastName, Integer age, LocalDateTime accountCreated, LocalDateTime lastLogin, UserRole userRole) {
         this.isVerified = isVerified;
-        this.id = id;
+        this.userId = userId;
         this.email = email;
         this.username = username;
         this.password = password;
@@ -68,12 +73,12 @@ public class User {
         isVerified = verified;
     }
 
-    public Integer getId() {
-        return id;
+    public Integer getUserId() {
+        return userId;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
+    public void setUserId(Integer userID) {
+        this.userId = userID;
     }
 
     public String getEmail() {
@@ -88,8 +93,33 @@ public class User {
         return username;
     }
 
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(userRole.name()));
     }
 
     public String getPassword() {
