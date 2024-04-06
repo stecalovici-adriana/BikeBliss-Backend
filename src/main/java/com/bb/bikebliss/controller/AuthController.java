@@ -12,6 +12,7 @@ import com.bb.bikebliss.service.implementation.AuthenticationService;
 import com.bb.bikebliss.service.implementation.JwtService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -50,22 +51,14 @@ public class AuthController {
     }
 
     @GetMapping("/verify")
-    public ResponseEntity<?> verifyUser(@RequestParam("token") String token) {
+    public ResponseEntity<AuthenticationResponse> verifyUser(@RequestParam("token") String token) {
         AuthenticationResponse response = authService.verifyUser(token);
         if (!response.isVerified()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthenticationResponse(null, response.getMessage(), false));
         }
-        return ResponseEntity.ok(response);
-    }
 
-    @GetMapping("/verify-status")
-    public ResponseEntity<?> verifyAndAuthenticateUser(@RequestParam("token") String token) {
-        try {
-            AuthenticationResponse response = authService.verifyAndAuthenticate(token);
-            return ResponseEntity.ok(response);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(e.getMessage());
-        }
+        return ResponseEntity.ok(new AuthenticationResponse(response.getToken(), "User successfully verified", true));
     }
-
 }

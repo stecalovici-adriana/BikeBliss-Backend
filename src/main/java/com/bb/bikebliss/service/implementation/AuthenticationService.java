@@ -77,46 +77,53 @@ public class AuthenticationService {
         verificationToken.setExpiryDate(LocalDateTime.now().plusDays(1));
         verificationTokenRepository.save(verificationToken);
 
-        String verificationLink = "http://localhost:8080/api/auth/verify?token=" + token;
-        emailService.sendEmail(savedUser.getEmail(), "Confirm your email", "Please click on the following link to verify your email: " + verificationLink);
+        String frontEndUrl = "http://localhost:3000";
+        String verificationLink = frontEndUrl + "/verify-email?token=" + token;
 
-        return new AuthenticationResponse(null, "User registration was successful, please check your email to verify your account.");
+        // Construirea corpului emailului în format HTML
+        String emailBody = "<p>Dear " + firstName + " " + lastName + ",</p>" +
+                "<p>Please verify your account by clicking on the following link:</p>" +
+                "<a href='" + verificationLink + "'>" + verificationLink + "</a>" +
+                "<p>The link is valid for 24 hours.</p>";
+
+        // Trimite emailul de verificare
+        emailService.sendHtmlEmail(savedUser.getEmail(), "Confirm your email", emailBody);
+
+
+        return new AuthenticationResponse(token, "User registration was successful, please check your email to verify your account.");
     }
 
     public AuthenticationResponse verifyUser(String token) {
+        if (token == null || token.isEmpty()) {
+            return new AuthenticationResponse(null, "Invalid token", false);
+        }
+
         Optional<VerificationToken> verificationTokenOpt = verificationTokenRepository.findByToken(token);
-        if (verificationTokenOpt.isEmpty() || verificationTokenOpt.get().getExpiryDate().isBefore(LocalDateTime.now())) {
-            return new AuthenticationResponse(null, "Verification failed", false);
+        if (verificationTokenOpt.isEmpty()) {
+            return new AuthenticationResponse(null, "Token not found", false);
         }
 
         VerificationToken verificationToken = verificationTokenOpt.get();
         User user = verificationToken.getUser();
+
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            // Oferă opțiunea de a regenera tokenul dacă este necesar
+            return new AuthenticationResponse(null, "Token expired", false);
+        }
+
         if (user.getVerified()) {
-            return new AuthenticationResponse(null, "User already verified", true);
+            return new AuthenticationResponse(jwtService.generateToken(user), "User already verified", true);
         }
 
         user.setVerified(true);
         userRepository.save(user);
-        verificationTokenRepository.delete(verificationToken);
 
         String jwt = jwtService.generateToken(user);
+
+        verificationToken.setUsed(true);
+        verificationTokenRepository.save(verificationToken);
+
         return new AuthenticationResponse(jwt, "User successfully verified", true);
-    }
-
-    public AuthenticationResponse verifyAndAuthenticate(String token) {
-        Optional<VerificationToken> verificationTokenOpt = verificationTokenRepository.findByToken(token);
-        if (verificationTokenOpt.isEmpty() || verificationTokenOpt.get().getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new IllegalStateException("Invalid or expired token.");
-        }
-
-        VerificationToken verificationToken = verificationTokenOpt.get();
-        User user = verificationToken.getUser();
-        user.setVerified(true);
-        userRepository.save(user);
-        verificationTokenRepository.delete(verificationToken);
-
-        String jwt = jwtService.generateToken(user);
-        return new AuthenticationResponse(jwt, "User successfully verified and authenticated.", true);
     }
 
 

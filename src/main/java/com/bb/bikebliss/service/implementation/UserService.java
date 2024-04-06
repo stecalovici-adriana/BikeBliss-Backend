@@ -7,7 +7,10 @@ import com.bb.bikebliss.exception.UsernameAlreadyExistsException;
 import com.bb.bikebliss.repository.UserRepository;
 import com.bb.bikebliss.service.dto.UserDTO;
 import com.bb.bikebliss.service.mapper.UserMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +23,7 @@ public class UserService{
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
     @Autowired
     public UserService(UserRepository userRepository,
                        UserMapper userMapper,
@@ -29,8 +33,16 @@ public class UserService{
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
+    public UserDTO getCurrentUserDetails(HttpServletRequest request) {
+        String token = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
+        String username = jwtService.extractUsername(token);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        return userMapper.userToUserDTO(user);
+    }
     public List<UserDTO> findAllUsers() {
         return userRepository.findAll().stream()
                 .map(userMapper::userToUserDTO)

@@ -3,6 +3,7 @@ package com.bb.bikebliss.service.dto;
 import com.bb.bikebliss.entity.UserRole;
 import jakarta.validation.constraints.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record UserDTO(
@@ -34,10 +35,9 @@ public record UserDTO(
         @Size(min = 3, max = 50, message = "Last name must be between 3 and 50 characters long")
         String lastName,
 
-        @NotNull(message = "Age is required")
-        @Min(value = 18, message = "User must be at least 18 years old")
-        @Max(value = 100, message = "User age must be less than or equal to 100")
-        Integer age,
+        @NotNull(message = "Birth date is required")
+        @Past(message = "Birth date must be in the past")
+        LocalDate birthDate,
 
         @NotNull(message = "Account creation timestamp must not be null")
         LocalDateTime accountCreated,

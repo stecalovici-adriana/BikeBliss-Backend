@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -36,8 +37,8 @@ public class User implements UserDetails {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @Column(name = "age", nullable = false)
-    private Integer age;
+    @Column(name = "birth_date", nullable = false)
+    private LocalDate birthDate;
 
     @Column(name = "account_created", nullable = false)
     @CreationTimestamp
@@ -51,7 +52,7 @@ public class User implements UserDetails {
     private UserRole userRole;
     public User(){}
 
-    public User(Boolean isVerified, Integer userId, String email, String username, String password, String firstName, String lastName, Integer age, LocalDateTime accountCreated, LocalDateTime lastLogin, UserRole userRole) {
+    public User(Boolean isVerified, Integer userId, String email, String username, String password, String firstName, String lastName, LocalDate birthDate, LocalDateTime accountCreated, LocalDateTime lastLogin, UserRole userRole) {
         this.isVerified = isVerified;
         this.userId = userId;
         this.email = email;
@@ -59,7 +60,7 @@ public class User implements UserDetails {
         this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
-        this.age = age;
+        this.birthDate = birthDate;
         this.accountCreated = accountCreated;
         this.lastLogin = lastLogin;
         this.userRole = userRole;
@@ -146,12 +147,12 @@ public class User implements UserDetails {
         this.lastName = lastName;
     }
 
-    public Integer getAge() {
-        return age;
+    public LocalDate getBirthDate() {
+        return birthDate;
     }
 
-    public void setAge(Integer age) {
-        this.age = age;
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
     }
 
     public LocalDateTime getAccountCreated() {

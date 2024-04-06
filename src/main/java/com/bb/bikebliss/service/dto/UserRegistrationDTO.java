@@ -2,6 +2,8 @@ package com.bb.bikebliss.service.dto;
 import com.bb.bikebliss.validation.PasswordMatch;
 import jakarta.validation.constraints.*;
 
+import java.time.LocalDate;
+
 @PasswordMatch
 public record UserRegistrationDTO(
         @NotBlank(message = "Full name is required")
@@ -16,10 +18,9 @@ public record UserRegistrationDTO(
         @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters long")
         String username,
 
-        @NotNull(message = "Age is required")
-        @Min(value = 18, message = "User must be at least 18 years old")
-        @Max(value = 100, message = "User age must be less than or equal to 100")
-        Integer age,
+        @NotNull(message = "Birth date is required")
+        @Past(message = "Birth date must be in the past")
+        LocalDate birthDate,
 
         @NotBlank(message = "Password is required")
         @Size(min = 8, max = 64, message = "Password must be between 8 and 64 characters long")
