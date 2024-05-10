@@ -49,10 +49,14 @@ public class SecurityConfig {
                 }))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
-                        req->req.requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify")
+                        req->req
+                                .requestMatchers("/api/rentals/**").permitAll()
+                                .requestMatchers("/api/bikes/**", "/api/locations/**")
                                 .permitAll()
-                                .anyRequest()
-                                .authenticated()
+                                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify",
+                                        "/api/auth/forgot-password", "/api/auth/reset-password")
+                                .permitAll()
+                                .anyRequest().authenticated()
                 ).userDetailsService(userDetailsServiceImp)
                 .sessionManagement(session->session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

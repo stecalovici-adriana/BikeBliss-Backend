@@ -7,11 +7,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record UserDTO(
-        @NotNull(message = "Verified status must not be null")
         Boolean isVerified,
 
-        @Null(message = "ID must be null when creating a new user")
-        Integer id,
+        Integer userId,
 
         @NotBlank(message = "Email is required")
         @Email(message = "Email must be a valid email address")

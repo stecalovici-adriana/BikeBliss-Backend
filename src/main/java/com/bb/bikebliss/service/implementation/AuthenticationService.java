@@ -35,12 +35,12 @@ public class AuthenticationService {
 
     @Autowired
     public AuthenticationService(UserRepository userRepository,
-                       UserMapper userMapper,
-                       BCryptPasswordEncoder passwordEncoder,
-                       EmailService emailService,
-                       VerificationTokenRepository verificationTokenRepository,
-                       JwtService jwtService,
-                       AuthenticationManager authenticationManager) {
+                                 UserMapper userMapper,
+                                 BCryptPasswordEncoder passwordEncoder,
+                                 EmailService emailService,
+                                 VerificationTokenRepository verificationTokenRepository,
+                                 JwtService jwtService,
+                                 AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;

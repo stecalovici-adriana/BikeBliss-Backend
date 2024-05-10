@@ -71,6 +71,7 @@ public class UserService{
         if (userDTO.email() != null && !userDTO.email().equals(user.getEmail()) && userRepository.findByEmail(userDTO.email()).isPresent()) {
             throw new IllegalStateException("Email is already in use by another account.");
         }
+
         if (userDTO.username() != null && !userDTO.username().equals(user.getUsername()) && userRepository.findByUsername(userDTO.username()).isPresent()) {
             throw new IllegalStateException("Username is already taken.");
         }
@@ -79,10 +80,12 @@ public class UserService{
         if (userDTO.lastName() != null) user.setLastName(userDTO.lastName());
         if (userDTO.email() != null) user.setEmail(userDTO.email());
         if (userDTO.username() != null) user.setUsername(userDTO.username());
+        if (userDTO.birthDate() != null) user.setBirthDate(userDTO.birthDate());
 
         User updatedUser = userRepository.save(user);
         return userMapper.userToUserDTO(updatedUser);
     }
+
 
     public void changePassword(Integer userId, String newPassword) {
         User user = userRepository.findById(userId)
