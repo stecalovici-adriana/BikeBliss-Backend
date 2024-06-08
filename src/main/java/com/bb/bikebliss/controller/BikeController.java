@@ -3,7 +3,9 @@ package com.bb.bikebliss.controller;
 import com.bb.bikebliss.service.dto.BikeModelDTO;
 import com.bb.bikebliss.service.implementation.BikeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,12 +23,24 @@ public class BikeController {
     }
 
     @PostMapping("/addModels")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> addBikeModelWithBikes(@RequestBody BikeModelDTO bikeModelDTO) {
         try {
             bikeService.addBikeModelWithBikes(bikeModelDTO);
-            return ResponseEntity.ok("Modelul de bicicletă și bicicletele asociate au fost adăugate cu succes.");
+            return ResponseEntity.ok("The bike model and associated bikes have been successfully added.");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("A apărut o eroare la adăugarea modelului de bicicletă și a bicicletelor asociate.");
+            return ResponseEntity.status(500).body("An error occurred while adding the bike model and associated bikes: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/models/{modelId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> deleteBikeModel(@PathVariable Integer modelId) {
+        try {
+            bikeService.deleteBikeModel(modelId);
+            return ResponseEntity.ok("The bike model and all associated bikes have been successfully deleted.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while deleting the bike model: " + e.getMessage());
         }
     }
 

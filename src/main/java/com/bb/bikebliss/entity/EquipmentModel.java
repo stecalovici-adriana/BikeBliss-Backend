@@ -1,5 +1,6 @@
 package com.bb.bikebliss.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -28,6 +29,7 @@ public class EquipmentModel {
     @JoinColumn(name = "location_id", referencedColumnName = "locationId")
     private Location location;
     @OneToMany(mappedBy = "equipmentModel")
+    @JsonManagedReference
     private List<Equipment> equipment;
 
     public EquipmentModel(){}

@@ -6,13 +6,15 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {EquipmentMapper.class})
 public interface EquipmentModelMapper {
     EquipmentModelMapper INSTANCE = Mappers.getMapper(EquipmentModelMapper.class);
 
+    @Mapping(target = "locationAddress", source = "location.address")
     @Mapping(target = "locationId", source = "location.locationId")
-    EquipmentModelDTO toDto(EquipmentModel equipmentModel);
+    @Mapping(target = "equipments", ignore = true)
+    EquipmentModelDTO equipmentModeltoEquipmentModelDTO(EquipmentModel equipmentModel);
 
     @Mapping(target = "location", ignore = true)
-    EquipmentModel toEntity(EquipmentModelDTO equipmentModelDTO);
+    EquipmentModel equipmentModelDTOtoEquipmentModel(EquipmentModelDTO equipmentModelDTO);
 }

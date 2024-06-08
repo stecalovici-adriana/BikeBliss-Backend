@@ -6,8 +6,6 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -57,7 +55,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleAllUncaughtException(Exception ex) {
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "error", "An unexpected error occurred: " + ex.getMessage());
     }
-
 
     private ResponseEntity<Object> buildErrorResponse(HttpStatus status, Map<String, String> errors, String message) {
         Map<String, Object> errorDetails = new LinkedHashMap<>();

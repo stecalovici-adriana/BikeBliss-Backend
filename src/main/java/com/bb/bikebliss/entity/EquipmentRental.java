@@ -34,12 +34,10 @@ public class EquipmentRental {
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = false)
     private User user;
-    @Column(name = "days")
-    private Integer days;
 
     public EquipmentRental(){}
 
-    public EquipmentRental(Integer equipmentRentalId, LocalDateTime startDate, LocalDateTime endDate, BigDecimal totalPrice, RentalStatus rentalStatus, Equipment equipment, User user, Integer days) {
+    public EquipmentRental(Integer equipmentRentalId, LocalDateTime startDate, LocalDateTime endDate, BigDecimal totalPrice, RentalStatus rentalStatus, Equipment equipment, User user) {
         this.equipmentRentalId = equipmentRentalId;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -47,7 +45,6 @@ public class EquipmentRental {
         this.rentalStatus = rentalStatus;
         this.equipment = equipment;
         this.user = user;
-        this.days = days;
     }
 
     public Integer getEquipmentRentalId() {
@@ -104,13 +101,5 @@ public class EquipmentRental {
 
     public void setUser(User user) {
         this.user = user;
-    }
-
-    public Integer getDays() {
-        return days;
-    }
-
-    public void setDays(Integer days) {
-        this.days = days;
     }
 }

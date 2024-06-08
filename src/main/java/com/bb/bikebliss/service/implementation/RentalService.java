@@ -22,7 +22,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -94,29 +96,47 @@ public class RentalService {
         rental.setBike(availableBike);
         rental.setStartDate(startDate);
         rental.setEndDate(endDate);
+        rental.setRentalStatus(RentalStatus.PENDING);
 
         BigDecimal pricePerDay = availableBike.getBikeModel().getPricePerDay();
         BigDecimal totalPrice = pricePerDay.multiply(BigDecimal.valueOf(daysBetween));
         rental.setTotalPrice(totalPrice);
 
-        rental.setRentalStatus(RentalStatus.PENDING);
         rental = rentalRepository.save(rental);
 
-        // Obține informațiile despre locația bicicletei
-        String locationAddress = availableBike.getBikeModel().getLocation().getAddress();
-        String mapsLink = "https://www.google.com/maps/search/?api=1&query=" + URLEncoder.encode(locationAddress, StandardCharsets.UTF_8);
+        notifyAdminOfPendingRental(rental);
 
+        return rentalMapper.rentalToRentalDTO(rental);
+    }
+
+    private void notifyAdminOfPendingRental(Rental rental) {
+        String adminEmail = "adriana.stecalovici200@gmail.com";
+        String subject = "New Rental Pending Approval";
+        String body = "A new rental by is pending approval.\nRental Details:\n" +
+                "Start Date: " + rental.getStartDate() +
+                "\nEnd Date: " + rental.getEndDate() +
+                "\nTotal Price: " + rental.getTotalPrice();
+
+        emailService.sendHtmlEmail(adminEmail, subject, body);
+    }
+    public void approveRental(Integer rentalId) {
+        Rental rental = rentalRepository.findById(rentalId)
+                .orElseThrow(() -> new IllegalArgumentException("Rental not found"));
+        rental.setRentalStatus(RentalStatus.APPROVED);
+
+        rentalRepository.save(rental);
+        String locationAddress = rental.getBike().getBikeModel().getLocation().getAddress();
+        String mapsLink = "https://www.google.com/maps/search/?api=1&query=" + URLEncoder.encode(locationAddress, StandardCharsets.UTF_8);
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
+        String formattedStartDate = rental.getStartDate().format(dateFormatter) + " from " + rental.getStartDate().format(timeFormatter);
+        String formattedEndDate = rental.getEndDate().format(dateFormatter) + " at " + rental.getEndDate().format(timeFormatter);
+        BigDecimal totalPrice = rental.getTotalPrice();
 
-        String formattedStartDate = startDate.format(dateFormatter) + " from " + startDate.format(timeFormatter);
-        String formattedEndDate = endDate.format(dateFormatter) + " at " + endDate.format(timeFormatter);
-
-
-        String emailBody = "<p>Dear " + user.getFirstName() + " " + user.getLastName() + ",</p>" +
-                "<p>Thank you for choosing BikeBliss. Here are your rental details:</p>" +
+        String emailBody = "<p>Dear " + rental.getUser().getFirstName() + ",</p>" +
+                "<p>Thank you for choosing BikeBliss. Your rental has been approved. Here are your rental details:</p>" +
                 "<ul>" +
-                "<li><strong>Bike Model:</strong> " + availableBike.getBikeModel().getBikeModel() + "</li>" +
+                "<li><strong>Bike Model:</strong> " + rental.getBike().getBikeModel().getBikeModel() + "</li>" +
                 "<li><strong>Rental Period:</strong> " + formattedStartDate + " to " + formattedEndDate + "</li>" +
                 "<li><strong>Total Price:</strong> " + totalPrice + " RON</li>" +
                 "<li><strong>Pickup Location:</strong> <a href='" + mapsLink + "' target='_blank'>" + locationAddress + "</a></li>" +
@@ -126,23 +146,64 @@ public class RentalService {
                 "<p>Best regards,</p>" +
                 "<p>BikeBliss Team</p>";
 
-        emailService.sendHtmlEmail(user.getEmail(), "BikeBliss Rental Confirmation", emailBody);
-
-        return rentalMapper.rentalToRentalDTO(rental);
+        emailService.sendHtmlEmail(rental.getUser().getEmail(), "BikeBliss Rental Approval", emailBody);
     }
+
+    public void rejectRental(Integer rentalId) {
+        Rental rental = rentalRepository.findById(rentalId)
+                .orElseThrow(() -> new IllegalArgumentException("Rental not found"));
+
+        rental.setRentalStatus(RentalStatus.REJECTED);
+        rentalRepository.save(rental);
+
+        String locationAddress = rental.getBike().getBikeModel().getLocation().getAddress();
+        String mapsLink = "https://www.google.com/maps/search/?api=1&query=" + URLEncoder.encode(locationAddress, StandardCharsets.UTF_8);
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
+        String formattedStartDate = rental.getStartDate().format(dateFormatter) + " from " + rental.getStartDate().format(timeFormatter);
+        String formattedEndDate = rental.getEndDate().format(dateFormatter) + " at " + rental.getEndDate().format(timeFormatter);
+        BigDecimal totalPrice = rental.getTotalPrice();
+
+        String emailBody = "<p>Dear " + rental.getUser().getFirstName() + ",</p>" +
+                "<p>We regret to inform you that your rental request for the following bike has been rejected:</p>" +
+                "<ul>" +
+                "<li><strong>Bike Model:</strong> " + rental.getBike().getBikeModel().getBikeModel() + "</li>" +
+                "<li><strong>Rental Period:</strong> " + formattedStartDate + " to " + formattedEndDate + "</li>" +
+                "<li><strong>Total Price:</strong> " + totalPrice + " RON</li>" +
+                "<li><strong>Intended Pickup Location:</strong> <a href='" + mapsLink + "' target='_blank'>" + locationAddress + "</a></li>" +
+                "</ul>" +
+                "<p>Please contact us if you have any questions or need further assistance.</p>" +
+                "<p>Best regards,</p>" +
+                "<p>BikeBliss Team</p>";
+
+        emailService.sendHtmlEmail(rental.getUser().getEmail(), "BikeBliss Rental Rejection", emailBody);
+    }
+
     public List<UnavailableDateDTO> getUnavailableDatesForModel(Integer modelId) {
         List<Rental> rentals = rentalRepository.findRentalsByModelId(modelId);
-
-        return rentals.stream()
-                .map(rental -> new UnavailableDateDTO(
-                        rental.getStartDate().toLocalDate(),
-                        rental.getEndDate().toLocalDate()
-                ))
+        // Fetch the total number of bikes for this model
+        int totalBikes = bikeRepository.countByModelId(modelId);
+        // Map of dates to count of bikes rented
+        Map<LocalDate, Integer> bikeCountPerDay = new HashMap<>();
+        for (Rental rental : rentals) {
+            rental.getStartDate().toLocalDate().datesUntil(rental.getEndDate().toLocalDate().plusDays(1))
+                    .forEach(date -> bikeCountPerDay.put(date, bikeCountPerDay.getOrDefault(date, 0) + 1));
+        }
+        // Collect all dates where the number of bikes rented is equal to or greater than the total number of bikes
+        List<LocalDate> unavailableDates = bikeCountPerDay.entrySet().stream()
+                .filter(entry -> entry.getValue() >= totalBikes)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        // Convert the list of dates to date ranges (if needed) or just return as individual dates
+        return convertToUnavailableDateDTOs(unavailableDates);
+    }
+    private List<UnavailableDateDTO> convertToUnavailableDateDTOs(List<LocalDate> unavailableDates) {
+        return unavailableDates.stream()
+                .map(date -> new UnavailableDateDTO(date, date)) // Assuming each date is a single day range
                 .collect(Collectors.toList());
     }
 
-
-    @Scheduled(cron = "0 0 * * * *") //ruleaza din ora in ora
+    @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void updateRentalStatuses() {
         List<Rental> rentals = rentalRepository.findAll();
@@ -169,19 +230,49 @@ public class RentalService {
                 .collect(Collectors.toList());
     }
     public List<RentalDTO> getActiveRentals() {
-        List<Rental> rentals = rentalRepository.findByRentalStatus(RentalStatus.ACTIVE);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        List<Rental> rentals;
+        if (user.getUserRole() == UserRole.ADMIN) {
+            rentals = rentalRepository.findByRentalStatus(RentalStatus.ACTIVE);
+        } else {
+            rentals = rentalRepository.findByRentalStatusAndUser(RentalStatus.ACTIVE, user);
+        }
         return rentals.stream()
                 .map(rentalMapper::rentalToRentalDTO)
                 .collect(Collectors.toList());
     }
     public List<RentalDTO> getPendingRentals() {
-        List<Rental> rentals = rentalRepository.findByRentalStatus(RentalStatus.PENDING);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        List<Rental> rentals;
+        if (user.getUserRole() == UserRole.ADMIN) {
+            rentals = rentalRepository.findByRentalStatus(RentalStatus.PENDING);
+        } else {
+            rentals = rentalRepository.findByRentalStatusAndUser(RentalStatus.PENDING, user);
+        }
         return rentals.stream()
                 .map(rentalMapper::rentalToRentalDTO)
                 .collect(Collectors.toList());
     }
     public List<RentalDTO> getCompletedRentals() {
-        List<Rental> rentals = rentalRepository.findByRentalStatus(RentalStatus.COMPLETED);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        List<Rental> rentals;
+        if (user.getUserRole() == UserRole.ADMIN) {
+            rentals = rentalRepository.findByRentalStatus(RentalStatus.COMPLETED);
+        } else {
+            rentals = rentalRepository.findByRentalStatusAndUser(RentalStatus.COMPLETED, user);
+        }
         return rentals.stream()
                 .map(rentalMapper::rentalToRentalDTO)
                 .collect(Collectors.toList());
@@ -189,10 +280,9 @@ public class RentalService {
     @Transactional
     public void cancelRental(Integer rentalId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        User user = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         Rental rental = rentalRepository.findById(rentalId)
                 .orElseThrow(() -> new IllegalArgumentException("Rental not found"));
 
@@ -200,9 +290,7 @@ public class RentalService {
             throw new IllegalStateException("You are not authorized to cancel this rental.");
         }
 
-        LocalDateTime currentDateTime = LocalDateTime.now();
-        long hoursUntilStart = ChronoUnit.HOURS.between(currentDateTime, rental.getStartDate());
-
+        long hoursUntilStart = ChronoUnit.HOURS.between(LocalDateTime.now(), rental.getStartDate());
         if (hoursUntilStart < 6) {
             throw new IllegalStateException("The rental can only be canceled at least 6 hours before the start time.");
         }
@@ -216,7 +304,6 @@ public class RentalService {
         emailService.sendHtmlEmail(user.getEmail(), "BikeBliss Rental Cancellation", emailBody);
 
         bikeRepository.save(bike);
-
         rentalRepository.delete(rental);
     }
     @Scheduled(cron = "0 0 * * * *") // Acest cron job rulează la fiecare oră.
@@ -229,7 +316,7 @@ public class RentalService {
             if (rental.getRentalStatus() == RentalStatus.ACTIVE) {
                 long hoursUntilEnd = ChronoUnit.HOURS.between(now, rental.getEndDate());
 
-                if (hoursUntilEnd == 1) { // Trimite un e-mail cu o oră înainte de sfârșitul închirierii.
+                if (hoursUntilEnd == 1) {
                     User user = rental.getUser();
                     Bike bike = rental.getBike();
                     String emailBody = "<p>Dear " + user.getFirstName() + " " + user.getLastName() + ",</p>" +

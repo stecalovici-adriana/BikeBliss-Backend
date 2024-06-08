@@ -107,7 +107,6 @@ public class AuthenticationService {
         User user = verificationToken.getUser();
 
         if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-            // Oferă opțiunea de a regenera tokenul dacă este necesar
             return new AuthenticationResponse(null, "Token expired", false);
         }
 
@@ -143,11 +142,11 @@ public class AuthenticationService {
         }
 
         String jwt = jwtService.generateToken(user);
-
+        String userRole = user.getUserRole().toString();
         revokeAllTokenByUser(user);
         saveUserToken(jwt, user);
 
-        return new AuthenticationResponse(jwt, "User login was successful");
+        return new AuthenticationResponse(jwt, "User login was successful", userRole);
     }
 
     private void revokeAllTokenByUser(User user) {

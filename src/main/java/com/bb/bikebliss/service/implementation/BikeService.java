@@ -52,7 +52,6 @@ public class BikeService {
         bikeRepository.saveAll(bikes);
     }
 
-
     public List<BikeModelDTO> getAllBikeModels() {
         List<BikeModel> bikeModels = bikeModelRepository.findAll();
         return bikeModels.stream().map(this::getBikeModelDTO).collect(Collectors.toList());
@@ -82,4 +81,12 @@ public class BikeService {
                 bikeDTOs
         );
     }
+    public void deleteBikeModel(Integer modelId) {
+        BikeModel bikeModel = bikeModelRepository.findById(modelId)
+                .orElseThrow(() -> new RuntimeException("Bike model not found with id: " + modelId));
+
+        bikeRepository.deleteAllByModelId(modelId);
+        bikeModelRepository.delete(bikeModel);
+    }
+
 }

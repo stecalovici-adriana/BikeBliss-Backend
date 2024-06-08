@@ -48,24 +48,39 @@ public class SecurityConfig {
                     return corsConfig;
                 }))
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(
-                        req->req
-                                .requestMatchers("/api/rentals/**").permitAll()
-                                .requestMatchers("/api/bikes/**", "/api/locations/**")
-                                .permitAll()
-                                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify",
-                                        "/api/auth/forgot-password", "/api/auth/reset-password")
-                                .permitAll()
-                                .anyRequest().authenticated()
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/user/**")
+                        .hasAnyRole("ADMIN", "USER")
+                        .requestMatchers("/api/feedback/**").permitAll()
+                        .requestMatchers("/api/bikes/addModels",
+                                "/api/locations/addLocation","/api/equipments/addEquipmentModels",
+                                "/api/rentals/approveRental/{rentalId}", "/api/rentals/rejectRental/{rentalId}",
+                                "/api/equipmentRentals/approveEquipmentRental/{equipmentRentalId}",
+                                "/api/equipmentRentals/rejectEquipmentRental/{equipmentRentalId}")
+                        .hasAuthority("ADMIN")
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify",
+                                "/api/auth/forgot-password", "/api/auth/reset-password",
+                                "/api/bikes/models", "/api/bikes/models/{modelId}",
+                                "/api/rentals/unavailable-dates/{modelId}","/api/rentals/cancelRental/**",
+                                "/api/rentals/sendEndRentalReminders","/api/rentals/createRental/{modelId}",
+                                "/api/rentals/active-rentals", "/api/rentals/pending-rentals", "/api/rentals/completed-rentals",
+                                "/api/equipments/equipmentModels", "/api/equipments/equipmentModels/{equipmentModelId}",
+                                "/api/equipmentRentals/unavailable-dates/{equipmentModelId}",
+                                "/api/equipmentRentals/cancelEquipmentRental/{equipmentRentalId}",
+                                "/api/equipmentRentals/sendEndRentalReminders",
+                                "/api/equipmentRentals/createEquipmentRental/{equipmentRentalId}",
+                                "/api/equipmentRentals/active-rentals", "/api/equipmentRentals/pending-rentals",
+                                "/api/equipmentRentals/completed-rentals")
+                        .permitAll()
+                        .anyRequest().authenticated()
                 ).userDetailsService(userDetailsServiceImp)
                 .sessionManagement(session->session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(
-                        e->e.accessDeniedHandler(
-                                        (request, response, accessDeniedException)->response.setStatus(403)
-                                )
-                                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .exceptionHandling(e->e
+                        .accessDeniedHandler((request, response, accessDeniedException)->response.setStatus(403))
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .logout(l->l
                         .logoutUrl("/logout")
                         .addLogoutHandler(logoutHandler)

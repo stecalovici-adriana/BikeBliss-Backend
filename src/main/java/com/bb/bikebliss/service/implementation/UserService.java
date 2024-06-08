@@ -1,10 +1,12 @@
 package com.bb.bikebliss.service.implementation;
 
 import com.bb.bikebliss.entity.User;
+import com.bb.bikebliss.entity.UserRole;
 import com.bb.bikebliss.exception.EmailAlreadyExistsException;
 import com.bb.bikebliss.exception.UserNotFoundException;
 import com.bb.bikebliss.exception.UsernameAlreadyExistsException;
 import com.bb.bikebliss.repository.UserRepository;
+import com.bb.bikebliss.repository.VerificationTokenRepository;
 import com.bb.bikebliss.service.dto.UserDTO;
 import com.bb.bikebliss.service.mapper.UserMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,20 +26,27 @@ public class UserService{
     private final UserMapper userMapper;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final VerificationTokenRepository verificationTokenRepository;
     @Autowired
     public UserService(UserRepository userRepository,
                        UserMapper userMapper,
                        BCryptPasswordEncoder passwordEncoder,
                        EmailService emailService,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       VerificationTokenRepository verificationTokenRepository) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.verificationTokenRepository = verificationTokenRepository;
+    }
+    public void updateUserRole(Integer userId, UserRole newRole) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalStateException("User not found with id: " + userId));
+        user.setUserRole(newRole);
+        userRepository.save(user);
     }
 
-    public UserDTO getCurrentUserDetails(HttpServletRequest request) {
-        String token = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
+    public UserDTO getCurrentUserDetails(String token) {
         String username = jwtService.extractUsername(token);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
@@ -62,6 +71,7 @@ public class UserService{
         if (!userRepository.existsById(userId)) {
             throw new IllegalStateException("User not found with id: " + userId);
         }
+        verificationTokenRepository.deleteByUserId(userId);
         userRepository.deleteById(userId);
     }
     public UserDTO updateUser(Integer userId, UserDTO userDTO) {
@@ -86,7 +96,6 @@ public class UserService{
         return userMapper.userToUserDTO(updatedUser);
     }
 
-
     public void changePassword(Integer userId, String newPassword) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found with id: " + userId));
@@ -94,5 +103,4 @@ public class UserService{
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
-
 }

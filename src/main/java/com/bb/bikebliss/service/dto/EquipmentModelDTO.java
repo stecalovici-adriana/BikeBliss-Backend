@@ -1,7 +1,5 @@
 package com.bb.bikebliss.service.dto;
 
-import com.bb.bikebliss.entity.Equipment;
-
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -11,6 +9,7 @@ public record EquipmentModelDTO(
         String equipmentDescription,
         BigDecimal pricePerDay,
         String imageURL,
+        String locationAddress,
         Integer locationId,
-        List<Equipment> equipment
+        List<EquipmentDTO> equipments
 ) {}

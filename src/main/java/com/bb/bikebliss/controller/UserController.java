@@ -43,11 +43,7 @@ public class UserController {
     public ResponseEntity<?> getCurrentUserDetails(HttpServletRequest request) {
         try {
             String token = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
-            String username = jwtService.extractUsername(token);
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
-
-            UserDTO userDto = userMapper.userToUserDTO(user); // Utilizarea corectă a mapper-ului
+            UserDTO userDto = userService.getCurrentUserDetails(token);
             return ResponseEntity.ok(userDto);
         } catch (Exception e) {
             log.error("Error fetching user details: ", e);
@@ -72,12 +68,6 @@ public class UserController {
     public ResponseEntity<UserDTO> updateUser(@PathVariable Integer userId, @RequestBody UserDTO userDTO) {
         UserDTO updatedUser = userService.updateUser(userId, userDTO);
         return ResponseEntity.ok(updatedUser);
-    }
-
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Integer userId) {
-        userService.deleteUser(userId);
-        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{userId}/change-password")

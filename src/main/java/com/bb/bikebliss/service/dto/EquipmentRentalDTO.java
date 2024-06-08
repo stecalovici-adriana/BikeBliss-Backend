@@ -5,8 +5,8 @@ import com.bb.bikebliss.entity.RentalStatus;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public record RentalDTO(
-        Integer rentalId,
+public record EquipmentRentalDTO(
+        Integer equipmentRentalId,
         LocalDate startDate,
         LocalDate endDate,
         BigDecimal totalPrice,
@@ -14,11 +14,11 @@ public record RentalDTO(
         Integer userId,
         String username,
         String email,
-        Integer bikeId,
-        Integer modelId,
-        String bikeModel,
-        String bikeDescription,
-        String bikeImageURL,
+        Integer equipmentId,
+        Integer equipmentModelId,
+        String equipmentModel,
+        String equipmentDescription,
+        String equipmentImageURL,
         String locationAddress
 ) {
 }

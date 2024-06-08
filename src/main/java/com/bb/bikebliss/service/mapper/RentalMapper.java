@@ -13,6 +13,8 @@ public interface RentalMapper {
     RentalMapper INSTANCE = Mappers.getMapper(RentalMapper.class);
 
     @Mappings({
+            @Mapping(source = "user.email", target = "email"),
+            @Mapping(source = "user.username", target = "username"),
             @Mapping(source = "user.userId", target = "userId"),
             @Mapping(source = "bike.bikeId", target = "bikeId"),
             @Mapping(source = "bike.bikeModel.modelId", target = "modelId"),

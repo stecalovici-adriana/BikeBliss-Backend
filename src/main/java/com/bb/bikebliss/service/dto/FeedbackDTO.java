@@ -7,8 +7,8 @@ public record FeedbackDTO(
         String feedbackText,
         Integer rating,
         LocalDateTime feedbackDate,
+        String username,
         Integer userId,
-        Integer rentalId,
-        Integer equipmentRentalId
+        Integer rentalId
 ) {
 }
