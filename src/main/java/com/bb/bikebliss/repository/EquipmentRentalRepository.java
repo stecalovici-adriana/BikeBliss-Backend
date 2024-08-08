@@ -10,12 +10,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface EquipmentRentalRepository extends JpaRepository<EquipmentRental, Integer> {
     @Query("SELECT r FROM EquipmentRental r WHERE r.equipment.equipmentModel.equipmentModelId = :equipmentModelId")
     List<EquipmentRental> findEquipmentRentalsByEquipmentModelId(@Param("equipmentModelId") Integer equipmentModelId);
     List<EquipmentRental> findByUser(User user);
+    @Query("SELECT COUNT(e) FROM EquipmentRental e WHERE e.user = :user")
+    long countEquipmentRentalsByUser(@Param("user") User user);
     List<EquipmentRental> findByRentalStatus(RentalStatus status);
-    List<EquipmentRental> findByRentalStatusAndUser(RentalStatus status, User user);
+    List<EquipmentRental> findAll();
+    Optional<EquipmentRental> findById(Integer equipmentRentalId);
 }

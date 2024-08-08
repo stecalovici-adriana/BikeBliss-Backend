@@ -52,17 +52,18 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/user/**")
                         .hasAnyRole("ADMIN", "USER")
-                        .requestMatchers("/api/feedback/**").permitAll()
+                        .requestMatchers("/api/feedback/**", "/api/feedbackEq/**").permitAll()
                         .requestMatchers("/api/bikes/addModels",
                                 "/api/locations/addLocation","/api/equipments/addEquipmentModels",
                                 "/api/rentals/approveRental/{rentalId}", "/api/rentals/rejectRental/{rentalId}",
                                 "/api/equipmentRentals/approveEquipmentRental/{equipmentRentalId}",
-                                "/api/equipmentRentals/rejectEquipmentRental/{equipmentRentalId}")
+                                "/api/equipmentRentals/rejectEquipmentRental/{equipmentRentalId}",
+                                "/api/equipmentRentals/all-rentals", "/api/rentals/all-bikeRentals")
                         .hasAuthority("ADMIN")
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify",
                                 "/api/auth/forgot-password", "/api/auth/reset-password",
                                 "/api/bikes/models", "/api/bikes/models/{modelId}",
-                                "/api/rentals/unavailable-dates/{modelId}","/api/rentals/cancelRental/**",
+                                "/api/rentals/unavailable-dates/{modelId}","/api/rentals/cancelRental/{rentalId}",
                                 "/api/rentals/sendEndRentalReminders","/api/rentals/createRental/{modelId}",
                                 "/api/rentals/active-rentals", "/api/rentals/pending-rentals", "/api/rentals/completed-rentals",
                                 "/api/equipments/equipmentModels", "/api/equipments/equipmentModels/{equipmentModelId}",
@@ -71,7 +72,7 @@ public class SecurityConfig {
                                 "/api/equipmentRentals/sendEndRentalReminders",
                                 "/api/equipmentRentals/createEquipmentRental/{equipmentRentalId}",
                                 "/api/equipmentRentals/active-rentals", "/api/equipmentRentals/pending-rentals",
-                                "/api/equipmentRentals/completed-rentals")
+                                "/api/equipmentRentals/completed-rentals","/api/locations/all")
                         .permitAll()
                         .anyRequest().authenticated()
                 ).userDetailsService(userDetailsServiceImp)

@@ -21,7 +21,6 @@ public class EquipmentController {
 
         this.equipmentService = equipmentService;
     }
-
     @PostMapping("/addEquipmentModels")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> addEquipmentModelWithEquipments(@RequestBody EquipmentModelDTO equipmentModelDTO) {

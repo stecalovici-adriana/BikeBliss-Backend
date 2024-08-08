@@ -8,6 +8,7 @@ public record EquipmentModelDTO(
         String equipmentModel,
         String equipmentDescription,
         BigDecimal pricePerDay,
+        BigDecimal discountedPrice,
         String imageURL,
         String locationAddress,
         Integer locationId,

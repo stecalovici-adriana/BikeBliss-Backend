@@ -12,6 +12,7 @@ import com.bb.bikebliss.service.mapper.UserMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -56,6 +57,17 @@ public class UserService{
         return userRepository.findAll().stream()
                 .map(userMapper::userToUserDTO)
                 .collect(Collectors.toList());
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDTO updateUserRole(Long userId, UserRole newRole) {
+        User user = userRepository.findById(Math.toIntExact(userId))
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        user.setUserRole(newRole);
+        userRepository.save(user);
+
+        return userMapper.userToUserDTO(user);
     }
     public UserDTO findByUsername(String username) {
         User user = userRepository.findByUsername(username)

@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -34,8 +35,8 @@ public class VerificationTokenRepositoryTest extends MySQLContainerGenerator{
     void setUp() {
         verificationTokenRepository.deleteAll();
         userRepository.deleteAll();
-
-        User user = new User(true, null, "test@example.com", "testuser", "passhash", "Test", "User", 25, LocalDateTime.now(), null, UserRole.USER);
+        LocalDate birthDate = LocalDate.of(1985, 1, 1);
+        User user = new User(true, null, "test@example.com", "testuser", "passhash", "Test", "User", birthDate, LocalDateTime.now(), null, UserRole.USER);
         userRepository.save(user);
 
         verificationToken = new VerificationToken(null, "token123", user, LocalDateTime.now().plusDays(1));

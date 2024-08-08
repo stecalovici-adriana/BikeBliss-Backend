@@ -78,8 +78,8 @@ public class EquipmentRentalService {
         long daysBetween = ChronoUnit.DAYS.between(startDate.toLocalDate(), endDate.toLocalDate()) + 1;
         if (daysBetween < 1) {
             throw new IllegalStateException("The equipment rental period must be at least 6 hours.");
-        } else if (daysBetween > 60) {
-            throw new IllegalStateException("The equipment rental period cannot exceed 60 days.");
+        } else if (daysBetween > 14) {
+            throw new IllegalStateException("The equipment rental period cannot exceed 14 days.");
         }
 
         Equipment availableEquipment = equipmentRepository.findAvailableEquipments(equipmentModelId, startDate, endDate)
@@ -96,6 +96,14 @@ public class EquipmentRentalService {
 
         BigDecimal pricePerDay = availableEquipment.getEquipmentModel().getPricePerDay();
         BigDecimal totalPrice = pricePerDay.multiply(BigDecimal.valueOf(daysBetween));
+
+        // Verificați numărul de închirieri anterioare ale utilizatorului
+        long equipmentRentalCount = equipmentRentalRepository.countEquipmentRentalsByUser(user);
+        if (equipmentRentalCount > 3) {
+            // Aplicați o reducere de 15% dacă utilizatorul a închiriat mai mult de 3 ori
+            totalPrice = totalPrice.multiply(BigDecimal.valueOf(0.85));
+        }
+
         equipmentRental.setTotalPrice(totalPrice);
 
         equipmentRental = equipmentRentalRepository.save(equipmentRental);
@@ -107,11 +115,21 @@ public class EquipmentRentalService {
     private void notifyAdminOfPendingRental(EquipmentRental equipmentRental) {
         String adminEmail = "adriana.stecalovici200@gmail.com";
         String subject = "New Rental Pending Approval";
-        String body = "A new rental by " + equipmentRental.getUser().getEmail() +
-                " is pending approval.\nRental Details:\n" +
-                "Start Date: " + equipmentRental.getStartDate() +
-                "\nEnd Date: " + equipmentRental.getEndDate() +
-                "\nTotal Price: " + equipmentRental.getTotalPrice();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
+        String formattedStartDate = equipmentRental.getStartDate().format(dateFormatter) + " from " + equipmentRental.getStartDate().format(timeFormatter);
+        String formattedEndDate = equipmentRental.getEndDate().format(dateFormatter) + " at " + equipmentRental.getEndDate().format(timeFormatter);
+
+        String body = "<p>Dear Owner,</p>" +
+                "<p>A new rental is pending approval. Please view the details below:</p>" +
+                "<ul>" +
+                "<li><strong>Start Date:</strong> " + formattedStartDate + "</li>" +
+                "<li><strong>End Date:</strong> " + formattedEndDate + "</li>" +
+                "<li><strong>Total Price:</strong> " + equipmentRental.getTotalPrice() + " RON</li>" +
+                "</ul>" +
+                "<p>Please review and approve or reject the rental request at your earliest convenience.</p>" +
+                "<p>Best regards,</p>" +
+                "<p>BikeBliss Team</p>";
 
         emailService.sendHtmlEmail(adminEmail, subject, body);
     }
@@ -129,12 +147,16 @@ public class EquipmentRentalService {
         String formattedEndDate = equipmentRental.getEndDate().format(dateFormatter) + " at " + equipmentRental.getEndDate().format(timeFormatter);
         BigDecimal totalPrice = equipmentRental.getTotalPrice();
 
+// Verificați numărul de închirieri anterioare ale utilizatorului
+        long equipmentRentalCount = equipmentRentalRepository.countEquipmentRentalsByUser(equipmentRental.getUser());
+        boolean discountApplied = equipmentRentalCount > 3;
+
         String emailBody = "<p>Dear " + equipmentRental.getUser().getFirstName() + ",</p>" +
                 "<p>Thank you for choosing BikeBliss. Your rental has been approved. Here are your rental details:</p>" +
                 "<ul>" +
                 "<li><strong>Equipment Model:</strong> " + equipmentRental.getEquipment().getEquipmentModel().getEquipmentModel() + "</li>" +
                 "<li><strong>Rental Period:</strong> " + formattedStartDate + " to " + formattedEndDate + "</li>" +
-                "<li><strong>Total Price:</strong> " + totalPrice + " RON</li>" +
+                "<li><strong>Total Price:</strong> " + totalPrice + " RON" + (discountApplied ? " (including 15% discount)" : "") + "</li>" +
                 "<li><strong>Pickup Location:</strong> <a href='" + mapsLink + "' target='_blank'>" + locationAddress + "</a></li>" +
                 "</ul>" +
                 "<p>You can pick up the equipment starting from 6:00 AM at the location mentioned above.</p>" +
@@ -159,12 +181,16 @@ public class EquipmentRentalService {
         String formattedEndDate = equipmentRental.getEndDate().format(dateFormatter) + " at " + equipmentRental.getEndDate().format(timeFormatter);
         BigDecimal totalPrice = equipmentRental.getTotalPrice();
 
+// Verificați numărul de închirieri anterioare ale utilizatorului
+        long equipmentRentalCount = equipmentRentalRepository.countEquipmentRentalsByUser(equipmentRental.getUser());
+        boolean discountApplied = equipmentRentalCount > 3;
+
         String emailBody = "<p>Dear " + equipmentRental.getUser().getFirstName() + ",</p>" +
                 "<p>We regret to inform you that your rental request for the following bike has been rejected:</p>" +
                 "<ul>" +
                 "<li><strong>Equipment Model:</strong> " + equipmentRental.getEquipment().getEquipmentModel().getEquipmentModel() + "</li>" +
                 "<li><strong>Rental Period:</strong> " + formattedStartDate + " to " + formattedEndDate + "</li>" +
-                "<li><strong>Total Price:</strong> " + totalPrice + " RON</li>" +
+                "<li><strong>Total Price:</strong> " + totalPrice + " RON" + (discountApplied ? " (including 15% discount)" : "") + "</li>" +
                 "<li><strong>Intended Pickup Location:</strong> <a href='" + mapsLink + "' target='_blank'>" + locationAddress + "</a></li>" +
                 "</ul>" +
                 "<p>Please contact us if you have any questions or need further assistance.</p>" +
@@ -244,7 +270,7 @@ public class EquipmentRentalService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        EquipmentRental equipmentRental = equipmentRentalRepository.findEquipmentRentalsByEquipmentModelId(equipmentRentalId)
+        EquipmentRental equipmentRental = equipmentRentalRepository.findById(equipmentRentalId)
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Rental not found"));
@@ -295,5 +321,11 @@ public class EquipmentRentalService {
                 }
             }
         }
+    }
+    public List<EquipmentRentalDTO> getAllRentals() {
+        List<EquipmentRental> rentals = equipmentRentalRepository.findAll();
+        return rentals.stream()
+                .map(equipmentRentalMapper::equipmentRentalToEquipmentRentalDTO)
+                .collect(Collectors.toList());
     }
 }

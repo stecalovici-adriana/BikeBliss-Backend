@@ -148,7 +148,36 @@ public class AuthenticationService {
 
         return new AuthenticationResponse(jwt, "User login was successful", userRole);
     }
+    public void processForgotPassword(String email) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            String token = UUID.randomUUID().toString();
+            VerificationToken verificationToken = new VerificationToken(null, token, user, LocalDateTime.now().plusHours(1));
+            verificationTokenRepository.save(verificationToken);
 
+            String resetLink = "http://localhost:3000/reset-password/" + token;
+            String emailBody = "<p>Please click the below link to reset your password:</p>"
+                    + "<p><a href=\"" + resetLink + "\">" + resetLink + "</a></p>"
+                    + "<p>This link will expire in 1 hour.</p>";
+
+            emailService.sendHtmlEmail(user.getEmail(), "Password Reset Request", emailBody);
+        }
+    }
+    public void resetPassword(String token, String newPassword) {
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalStateException("Invalid token"));
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Token expired");
+        }
+
+        User user = verificationToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        verificationToken.setUsed(true);
+        verificationTokenRepository.save(verificationToken);
+    }
     private void revokeAllTokenByUser(User user) {
         List<VerificationToken> validTokens = verificationTokenRepository.findAllTokensByUser(user.getUserId());
         if(validTokens.isEmpty()) {

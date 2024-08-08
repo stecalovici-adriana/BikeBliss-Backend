@@ -123,4 +123,9 @@ public class EquipmentRentalController {
         equipmentRentalService.sendEndRentalReminder();
         return ResponseEntity.ok("End rental reminders sent successfully.");
     }
+    @GetMapping("/all-rentals")
+    public ResponseEntity<List<EquipmentRentalDTO>> getAllRentals() {
+        List<EquipmentRentalDTO> allRentals = equipmentRentalService.getAllRentals();
+        return ResponseEntity.ok(allRentals);
+    }
 }

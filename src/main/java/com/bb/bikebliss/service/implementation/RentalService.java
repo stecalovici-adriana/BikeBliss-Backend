@@ -4,6 +4,7 @@ import com.bb.bikebliss.entity.*;
 import com.bb.bikebliss.repository.BikeRepository;
 import com.bb.bikebliss.repository.RentalRepository;
 import com.bb.bikebliss.repository.UserRepository;
+import com.bb.bikebliss.service.dto.EquipmentRentalDTO;
 import com.bb.bikebliss.service.dto.RentalDTO;
 import com.bb.bikebliss.service.dto.UnavailableDateDTO;
 import com.bb.bikebliss.service.mapper.RentalMapper;
@@ -82,8 +83,8 @@ public class RentalService {
         long daysBetween = ChronoUnit.DAYS.between(startDate.toLocalDate(), endDate.toLocalDate()) + 1;
         if (daysBetween < 1) {
             throw new IllegalStateException("The rental period must be at least 6 hours.");
-        } else if (daysBetween > 60) {
-            throw new IllegalStateException("The rental period cannot exceed 60 days.");
+        } else if (daysBetween > 14) {
+            throw new IllegalStateException("The rental period cannot exceed 14 days.");
         }
 
         Bike availableBike = bikeRepository.findAvailableBikes(modelId, startDate, endDate)
@@ -100,6 +101,14 @@ public class RentalService {
 
         BigDecimal pricePerDay = availableBike.getBikeModel().getPricePerDay();
         BigDecimal totalPrice = pricePerDay.multiply(BigDecimal.valueOf(daysBetween));
+
+        // Verificați numărul de închirieri anterioare ale utilizatorului
+        long rentalCount = rentalRepository.countRentalsByUser(user);
+        if (rentalCount > 3) {
+            // Aplicați o reducere de 20% dacă utilizatorul a închiriat mai mult de 3 ori
+            totalPrice = totalPrice.multiply(BigDecimal.valueOf(0.8));
+        }
+
         rental.setTotalPrice(totalPrice);
 
         rental = rentalRepository.save(rental);
@@ -112,10 +121,21 @@ public class RentalService {
     private void notifyAdminOfPendingRental(Rental rental) {
         String adminEmail = "adriana.stecalovici200@gmail.com";
         String subject = "New Rental Pending Approval";
-        String body = "A new rental by is pending approval.\nRental Details:\n" +
-                "Start Date: " + rental.getStartDate() +
-                "\nEnd Date: " + rental.getEndDate() +
-                "\nTotal Price: " + rental.getTotalPrice();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
+        String formattedStartDate = rental.getStartDate().format(dateFormatter) + " from " + rental.getStartDate().format(timeFormatter);
+        String formattedEndDate = rental.getEndDate().format(dateFormatter) + " at " + rental.getEndDate().format(timeFormatter);
+
+        String body = "<p>Dear Owner,</p>" +
+                "<p>A new rental is pending approval. Please view the details below:</p>" +
+                "<ul>" +
+                "<li><strong>Start Date:</strong> " + formattedStartDate + "</li>" +
+                "<li><strong>End Date:</strong> " + formattedEndDate + "</li>" +
+                "<li><strong>Total Price:</strong> " + rental.getTotalPrice() + " RON</li>" +
+                "</ul>" +
+                "<p>Please review and approve or reject the rental request at your earliest convenience.</p>" +
+                "<p>Best regards,</p>" +
+                "<p>BikeBliss Team</p>";
 
         emailService.sendHtmlEmail(adminEmail, subject, body);
     }
@@ -133,12 +153,16 @@ public class RentalService {
         String formattedEndDate = rental.getEndDate().format(dateFormatter) + " at " + rental.getEndDate().format(timeFormatter);
         BigDecimal totalPrice = rental.getTotalPrice();
 
+// Verificați numărul de închirieri anterioare ale utilizatorului
+        long rentalCount = rentalRepository.countRentalsByUser(rental.getUser());
+        boolean discountApplied = rentalCount > 3;
+
         String emailBody = "<p>Dear " + rental.getUser().getFirstName() + ",</p>" +
                 "<p>Thank you for choosing BikeBliss. Your rental has been approved. Here are your rental details:</p>" +
                 "<ul>" +
                 "<li><strong>Bike Model:</strong> " + rental.getBike().getBikeModel().getBikeModel() + "</li>" +
                 "<li><strong>Rental Period:</strong> " + formattedStartDate + " to " + formattedEndDate + "</li>" +
-                "<li><strong>Total Price:</strong> " + totalPrice + " RON</li>" +
+                "<li><strong>Total Price:</strong> " + totalPrice + " RON" + (discountApplied ? " (including 20% discount)" : "") + "</li>" +
                 "<li><strong>Pickup Location:</strong> <a href='" + mapsLink + "' target='_blank'>" + locationAddress + "</a></li>" +
                 "</ul>" +
                 "<p>You can pick up the bike starting from 6:00 AM at the location mentioned above.</p>" +
@@ -164,12 +188,16 @@ public class RentalService {
         String formattedEndDate = rental.getEndDate().format(dateFormatter) + " at " + rental.getEndDate().format(timeFormatter);
         BigDecimal totalPrice = rental.getTotalPrice();
 
+// Verificați numărul de închirieri anterioare ale utilizatorului
+        long rentalCount = rentalRepository.countRentalsByUser(rental.getUser());
+        boolean discountApplied = rentalCount > 3;
+
         String emailBody = "<p>Dear " + rental.getUser().getFirstName() + ",</p>" +
                 "<p>We regret to inform you that your rental request for the following bike has been rejected:</p>" +
                 "<ul>" +
                 "<li><strong>Bike Model:</strong> " + rental.getBike().getBikeModel().getBikeModel() + "</li>" +
                 "<li><strong>Rental Period:</strong> " + formattedStartDate + " to " + formattedEndDate + "</li>" +
-                "<li><strong>Total Price:</strong> " + totalPrice + " RON</li>" +
+                "<li><strong>Total Price:</strong> " + totalPrice + " RON" + (discountApplied ? " (including 20% discount)" : "") + "</li>" +
                 "<li><strong>Intended Pickup Location:</strong> <a href='" + mapsLink + "' target='_blank'>" + locationAddress + "</a></li>" +
                 "</ul>" +
                 "<p>Please contact us if you have any questions or need further assistance.</p>" +
@@ -306,7 +334,7 @@ public class RentalService {
         bikeRepository.save(bike);
         rentalRepository.delete(rental);
     }
-    @Scheduled(cron = "0 0 * * * *") // Acest cron job rulează la fiecare oră.
+    @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void sendEndRentalReminder() {
         List<Rental> rentals = rentalRepository.findAll();
@@ -331,5 +359,10 @@ public class RentalService {
             }
         }
     }
-
+    public List<RentalDTO> getAllBikeRentals() {
+        List<Rental> rentals = rentalRepository.findAll();
+        return rentals.stream()
+                .map(rentalMapper::rentalToRentalDTO)
+                .collect(Collectors.toList());
+    }
 }

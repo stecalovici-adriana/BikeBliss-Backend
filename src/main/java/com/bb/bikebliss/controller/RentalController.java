@@ -1,5 +1,6 @@
 package com.bb.bikebliss.controller;
 
+import com.bb.bikebliss.service.dto.EquipmentRentalDTO;
 import com.bb.bikebliss.service.dto.RentalDTO;
 import com.bb.bikebliss.service.dto.UnavailableDateDTO;
 import com.bb.bikebliss.service.implementation.RentalService;
@@ -116,15 +117,20 @@ public class RentalController {
         try {
             rentalService.cancelRental(rentalId);
             return ResponseEntity.ok("Rental canceled successfully.");
-        } catch (IllegalStateException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred: " + ex.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while canceling the rental.");
         }
     }
     @PostMapping("/sendEndRentalReminders")
     public ResponseEntity<?> sendEndRentalReminders() {
         rentalService.sendEndRentalReminder();
         return ResponseEntity.ok("End rental reminders sent successfully.");
+    }
+    @GetMapping("/all-bikeRentals")
+    public ResponseEntity<List<RentalDTO>> getAllBikeRentals() {
+        List<RentalDTO> allBikeRentals = rentalService.getAllBikeRentals();
+        return ResponseEntity.ok(allBikeRentals);
     }
 }

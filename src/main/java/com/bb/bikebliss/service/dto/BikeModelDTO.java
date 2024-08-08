@@ -7,6 +7,7 @@ public record BikeModelDTO(
         Integer modelId,
         String bikeModel,
         BigDecimal pricePerDay,
+        BigDecimal discountedPrice,
         String bikeDescription,
         String imageURL,
         String locationAddress,

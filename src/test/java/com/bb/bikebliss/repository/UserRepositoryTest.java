@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,9 +34,9 @@ public class UserRepositoryTest {
         verificationTokenRepository.deleteAll();
         userRepository.deleteAllInBatch();
 
-        LocalDateTime now = LocalDateTime.now();
-        user1 = new User(true, null, "user1@example.com", "user1", "passhash1", "User1", "Last1", 30, now.minusDays(2), null, UserRole.USER);
-        user2 = new User(true, null, "user2@example.com", "user2", "passhash2", "User2", "Last2", 25, now.minusDays(1), null, UserRole.USER);
+        LocalDateTime now = LocalDateTime.now(); LocalDate birthDate = LocalDate.of(1985, 1, 1);
+        user1 = new User(true, null, "user1@example.com", "user1", "passhash1", "User1", "Last1", birthDate, now.minusDays(2), null, UserRole.USER);
+        user2 = new User(true, null, "user2@example.com", "user2", "passhash2", "User2", "Last2", birthDate, now.minusDays(1), null, UserRole.USER);
         userRepository.saveAll(List.of(user1, user2));
     }
 

@@ -20,6 +20,9 @@ public interface RentalRepository extends JpaRepository<Rental, Integer> {
     @Query("SELECT r FROM Rental r WHERE r.bike.bikeModel.modelId = :modelId")
     List<Rental> findRentalsByModelId(@Param("modelId") Integer modelId);
     List<Rental> findByUser(User user);
+    @Query("SELECT COUNT(r) FROM Rental r WHERE r.user = :user")
+    long countRentalsByUser(@Param("user") User user);
     List<Rental> findByRentalStatus(RentalStatus status);
     List<Rental> findByRentalStatusAndUser(RentalStatus status, User user);
+    List<Rental> findAll();
 }

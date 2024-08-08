@@ -1,13 +1,12 @@
 package com.bb.bikebliss.service.implementation;
 
-import com.bb.bikebliss.entity.Feedback;
-import com.bb.bikebliss.entity.Rental;
-import com.bb.bikebliss.entity.RentalStatus;
-import com.bb.bikebliss.entity.User;
+import com.bb.bikebliss.entity.*;
 import com.bb.bikebliss.repository.FeedbackRepository;
 import com.bb.bikebliss.repository.RentalRepository;
 import com.bb.bikebliss.repository.UserRepository;
 import com.bb.bikebliss.service.dto.FeedbackDTO;
+import com.bb.bikebliss.service.dto.FeedbackEqDTO;
+import com.bb.bikebliss.service.mapper.FeedbackEqMapper;
 import com.bb.bikebliss.service.mapper.FeedbackMapper;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +29,7 @@ public class FeedbackService {
 
     @Autowired
     public FeedbackService(FeedbackRepository feedbackRepository, RentalRepository rentalRepository,
-                           FeedbackMapper feedbackMapper, UserRepository userRepository) {
+                           FeedbackMapper feedbackMapper, FeedbackEqMapper feedbackEqMapper, UserRepository userRepository) {
         this.feedbackRepository = feedbackRepository;
         this.rentalRepository = rentalRepository;
         this.feedbackMapper = feedbackMapper;
